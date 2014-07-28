@@ -15,12 +15,15 @@
 
 @implementation AnalyticsViewController{
     NSInteger numWeeks;
+    NSMutableArray *xAxis;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     [_graphSegementedControl addTarget:self action:@selector(switchGraphs:) forControlEvents:UIControlEventValueChanged];
+    [_hostView setAllowPinchScaling:YES];
     numWeeks = 5;
+    //xAxis = @[@0.0,@1.0,@1.5,@2.0,@3.5];
 }
 
 -(void)viewDidAppear:(BOOL)animated{
@@ -54,6 +57,7 @@
 }
 
 -(void)switchGraphWithIdentifier:(NSString *)identifier{
+    xAxis = [[NSMutableArray alloc] init];
     CPTGraph *graph = self.hostView.hostedGraph;
     CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *) graph.defaultPlotSpace;
     NSArray *plots = [graph allPlots];
@@ -66,49 +70,93 @@
             [plot setHidden:YES];
         }
     }
+    
+    // Redo axis on graph switch
+    CPTXYAxisSet *axisSet = (CPTXYAxisSet *) self.hostView.hostedGraph.axisSet;
+    CPTXYAxis *x = axisSet.xAxis;
+    
+    NSString *xAxisTitle;
+    NSString *graphTitle;
+    //Calculate first weight
+    double firstWeight;
+
+    if([identifier isEqualToString:@"Recent"]){
+        firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:@"weight"] doubleValue];
+        xAxisTitle = @"Sessions Past";
+        graphTitle = @"Last 5 Workouts";
+    }else if([identifier isEqualToString:@"Week"]){
+        // Insert code to calculate past 5 week data
+        NSTimeInterval pastWeeks = 60 * 60 * 24 * 7 * numWeeks;
+        NSDate *currentDate = [NSDate date];
+        NSTimeInterval currentInterval = [currentDate timeIntervalSince1970];
+        currentInterval -= pastWeeks;
+        NSInteger indexOfOldestWorkout = [_workoutData count];
+        // Locate first instance of date out of bounds, end of array is more recent so back track.
+        for(int i = [_workoutData count] - 1; i >=0; i--){
+            NSTimeInterval diff = [currentDate timeIntervalSinceDate:[[_workoutData objectAtIndex:i] objectForKey:@"timestamp"]];
+            if(diff < pastWeeks){
+                // Index of a workout within week range
+                indexOfOldestWorkout = i;
+            }else{
+                // First element outside of range
+                break;
+            }
+        }
+        NSDate *oldestDate = [[_workoutData objectAtIndex:indexOfOldestWorkout] objectForKey:@"timestamp"];
+        NSTimeInterval referenceInterval = [currentDate timeIntervalSinceDate:oldestDate];
+        // Need to fill xAxis chronologically so iterate forward
+        for(int i = indexOfOldestWorkout; i < [_workoutData count]; i++){
+            NSDictionary *workout = [_workoutData objectAtIndex:i];
+            NSDate *workoutDate = [workout objectForKey:@"timestamp"];
+            NSTimeInterval interval = [workoutDate timeIntervalSinceDate:oldestDate];
+            double ratio = interval/referenceInterval;
+            ratio *= numWeeks;
+            NSNumber *xPos = [NSNumber numberWithDouble:ratio];
+            [xAxis addObject:xPos];
+        }
+        if(indexOfOldestWorkout == [_workoutData count]){
+            //If no workouts were within range, compensate by setting firstWeight to the last index of array
+            indexOfOldestWorkout--;
+        }
+        firstWeight = [[[_workoutData objectAtIndex:indexOfOldestWorkout]objectForKey:@"weight"] doubleValue];
+        
+        xAxisTitle = @"Past Weeks";
+        graphTitle = [[NSString alloc] initWithFormat:@"Past %@ Weeks",[NSNumber numberWithInteger:numWeeks]];
+    }else{
+        // Overall
+        NSDate *referenceDate = [[_workoutData firstObject] objectForKey:@"timestamp"];
+        NSDate *mostRecentDate = [[_workoutData lastObject] objectForKey:@"timestamp"];
+        NSTimeInterval referenceInterval = [mostRecentDate timeIntervalSinceDate:referenceDate];
+        // Iterate through workouts and calculate relative position in the overall timeframe
+        for(NSDictionary *workout in _workoutData){
+            NSDate *workoutDate = [workout objectForKey:@"timestamp"];
+            NSTimeInterval workoutInterval = [workoutDate timeIntervalSinceDate:referenceDate];
+            double ratio = (double)workoutInterval/referenceInterval;
+            ratio *= [_workoutData count];
+            NSNumber *xPos = [[NSNumber alloc] initWithDouble:ratio];
+            [xAxis addObject:xPos];
+        }
+        firstWeight = [[[_workoutData firstObject]objectForKey:@"weight"] doubleValue];
+        xAxisTitle = @"Dates";
+        graphTitle = @"All Workouts";
+    }
+    graph.title = graphTitle;
+    [currentPlot reloadData];
+    
     [plotSpace scaleToFitPlots:[NSArray arrayWithObjects:currentPlot, nil]];
+    
     CPTMutablePlotRange *xRange = [plotSpace.xRange mutableCopy];
     [xRange expandRangeByFactor:CPTDecimalFromCGFloat(1.2f)];
     plotSpace.xRange = xRange;
     CPTMutablePlotRange *yRange = [plotSpace.yRange mutableCopy];
-    double partialLength = 0.05 * CPTDecimalDoubleValue(yRange.length);
     
     [yRange expandRangeByFactor:CPTDecimalFromCGFloat(1.6f)];
-    double firstWeight;
-    if([identifier isEqualToString:@"Recent"]){
-        firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:@"weight"] doubleValue];
-    }else if([identifier isEqualToString:@"Week"]){
-        // Insert code to calculate past 5 week data
-        
-        NSTimeInterval pastWeeks = 60 * 60 * 24 * 7 * numWeeks;
-        NSInteger indexOfOldestWorkout = 0;
-        for(int i = 0; i< [_workoutData count]; i++){
-            NSTimeInterval diff = [[NSDate date] timeIntervalSinceDate:[[_workoutData objectAtIndex:i] objectForKey:@"timestamp"]];
-            if(diff > pastWeeks){
-                // Located index of workout thats too old
-                indexOfOldestWorkout = i - 1;
-                break;
-            }
-        }
-        if(indexOfOldestWorkout == -1){
-            indexOfOldestWorkout++;
-        }
-        firstWeight = [[[_workoutData objectAtIndex:indexOfOldestWorkout]objectForKey:@"weight"] doubleValue];
-    }else{
-        // Overall
-        firstWeight = [[[_workoutData firstObject]objectForKey:@"weight"] doubleValue];
-    }
-        // Calculate first weight
     yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromString([NSString stringWithFormat:@"%@",[NSNumber numberWithDouble:firstWeight - 2.5]]) length: yRange.length];
     plotSpace.yRange = yRange;
     
-    // Redo axis on graph switch
-    CPTXYAxisSet *axisSet = (CPTXYAxisSet *) self.hostView.hostedGraph.axisSet;
-    // 3 - Configure x-axis
-    CPTXYAxis *x = axisSet.xAxis;
-
+    
     x.orthogonalCoordinateDecimal = CPTDecimalFromString([NSString stringWithFormat:@"%@",[NSNumber numberWithDouble: firstWeight - 2.5]]);
-    x.title = @"Sessions Past";
+    x.title = xAxisTitle;
     x.titleOffset = 15.0f;
     x.labelingPolicy = CPTAxisLabelingPolicyNone;
     x.majorTickLength = 4.0f;
@@ -185,7 +233,7 @@
     //[graph applyTheme:[CPTTheme themeNamed:kCPTDarkGradientTheme]];
     self.hostView.hostedGraph = graph;
     // 2 - Set graph title
-    NSString *title = @"Workout Progress";
+    NSString *title = @"Last 5 Workouts";
     graph.title = title;
     // 3 - Create and set text style
     CPTMutableTextStyle *titleStyle = [CPTMutableTextStyle textStyle];
@@ -203,7 +251,7 @@
     //[graph.plotAreaFrame setBackgroundColor:[UIColor whiteColor].CGColor];
     // 5 - Enable user interactions for plot space
     CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *) graph.defaultPlotSpace;
-    plotSpace.allowsUserInteraction = NO;
+    plotSpace.allowsUserInteraction = YES;
 }
 
 -(void)configurePlots {
@@ -387,27 +435,23 @@
 #pragma mark - CPTScatterPlot methods
 
 -(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot{
-    NSString *plotId = plot.identifier;
+    NSString *plotId = (NSString *)plot.identifier;
     if([plotId isEqualToString:@"Recent"]){
         return 5;
     }else if([plotId isEqualToString:@"Week"]){
         NSTimeInterval pastWeeks = 60 * 60 * 24 * 7 * numWeeks;
-        NSInteger indexOfOldestWorkout = 0;
-        for(int i = 0; i< [_workoutData count]; i++){
+        NSInteger indexOfOldestWorkout = [_workoutData count];
+        for(int i = [_workoutData count] - 1; i >= 0; i--){
             NSTimeInterval diff = [[NSDate date] timeIntervalSinceDate:[[_workoutData objectAtIndex:i] objectForKey:@"timestamp"]];
-            if(diff > pastWeeks){
-                // Located index of workout thats too old
-                indexOfOldestWorkout = i - 1;
+            if(diff < pastWeeks){
+                // Located index of workout within range
+                indexOfOldestWorkout = i;
+            }else{
+                // First workout out of range
                 break;
             }
-            if(i == [_workoutData count] - 1){
-                indexOfOldestWorkout = [_workoutData count];
-            }
         }
-        if(indexOfOldestWorkout == -1){
-            return 0;
-        }
-        return indexOfOldestWorkout;
+        return [_workoutData count] - indexOfOldestWorkout;
     }else{
         return [_workoutData count];
     }
@@ -423,9 +467,9 @@
                     return [NSNumber numberWithUnsignedInteger:idx];
                 }
             }else if([plot.identifier isEqual:@"Week"]){
-                return [NSNumber numberWithInt:idx];
+                return [xAxis objectAtIndex:idx];
             }else{
-                return [NSNumber numberWithInt:idx];
+                return [xAxis objectAtIndex:idx];
             }
             break;
         case CPTScatterPlotFieldY:
