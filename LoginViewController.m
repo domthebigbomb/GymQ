@@ -113,12 +113,6 @@
     return YES;
 }
 
--(void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex{
-    if([alertView.title isEqualToString:@"Yay!"]){
-        //[self performSelector:@selector(login:)];
-    }
-}
-
 - (IBAction)login:(id)sender {
     [self.view layoutIfNeeded];
 

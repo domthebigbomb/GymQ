@@ -145,6 +145,17 @@
     
     [plotSpace scaleToFitPlots:[NSArray arrayWithObjects:currentPlot, nil]];
     
+    /*
+    currentPlot.anchorPoint = currentPlot.anchorPoint;
+    CABasicAnimation *scaling = [CABasicAnimation animationWithKeyPath:@"transform.scale.y"];
+    scaling.fromValue = [NSNumber numberWithFloat:0.0];
+    scaling.toValue = [NSNumber numberWithFloat:1.0];
+    scaling.duration = 0.5f;
+    scaling.removedOnCompletion = NO;
+    scaling.fillMode = kCAFillModeForwards;
+    [currentPlot addAnimation:scaling forKey:@"scaling"];
+    */
+    
     CPTMutablePlotRange *xRange = [plotSpace.xRange mutableCopy];
     [xRange expandRangeByFactor:CPTDecimalFromCGFloat(1.2f)];
     plotSpace.xRange = xRange;
