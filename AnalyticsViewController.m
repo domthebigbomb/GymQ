@@ -317,7 +317,7 @@
     CPTPlotSymbol *recentSymbol = [CPTPlotSymbol ellipsePlotSymbol];
     recentSymbol.fill = [CPTFill fillWithColor:recentColor];
     recentSymbol.lineStyle = recentLineStyle;
-    recentSymbol.size = CGSizeMake(6.0f, 6.0f);
+    recentSymbol.size = CGSizeMake(3.0f, 3.0f);
     recentPlot.plotSymbol = recentSymbol;
     
     CPTMutableLineStyle *weekLineStyle = [weekPlot.dataLineStyle mutableCopy];
@@ -329,7 +329,7 @@
     CPTPlotSymbol *weekSymbol = [CPTPlotSymbol ellipsePlotSymbol];
     weekSymbol.fill = [CPTFill fillWithColor:weekColor];
     weekSymbol.lineStyle = weekLineStyle;
-    weekSymbol.size = CGSizeMake(6.0f, 6.0f);
+    weekSymbol.size = CGSizeMake(3.0f, 3.0f);
     weekPlot.plotSymbol = weekSymbol;
     
     CPTMutableLineStyle *overallLineStyle = [overallPlot.dataLineStyle mutableCopy];
@@ -341,7 +341,7 @@
     CPTPlotSymbol *overallSymbol = [CPTPlotSymbol ellipsePlotSymbol];
     overallSymbol.fill = [CPTFill fillWithColor:overallColor];
     overallSymbol.lineStyle = overallLineStyle;
-    overallSymbol.size = CGSizeMake(6.0f, 6.0f);
+    overallSymbol.size = CGSizeMake(3.0f, 3.0f);
     overallPlot.plotSymbol = overallSymbol;
 }
 

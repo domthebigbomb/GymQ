@@ -41,7 +41,11 @@
     _loginBgView.layer.cornerRadius = 5.0f;
     [_confirmPasswordField setAlpha:0];
     [_emailField setAlpha:0];
-    
+    if(([[UIScreen mainScreen] bounds].size.height - 568) ? NO:YES){
+        // iPhone 5/5s keyboard adjustments
+        _backgroundImageConstraint.constant = 0;
+    }
+
     _tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideKeyboard)];
     _tap.enabled = YES;
     [self.view addGestureRecognizer:_tap];

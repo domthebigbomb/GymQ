@@ -126,7 +126,7 @@
                                             <rect key="frame" x="20" y="49" width="280" height="30"/>
                                             <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                             <fontDescription key="fontDescription" name="HelveticaNeue-Light" family="Helvetica Neue" pointSize="20"/>
-                                            <textInputTraits key="textInputTraits"/>
+                                            <textInputTraits key="textInputTraits" autocapitalizationType="words"/>
                                         </textField>
                                     </subviews>
                                     <color key="backgroundColor" red="0.19215686269999999" green="0.19215686269999999" blue="0.19215686269999999" alpha="1" colorSpace="calibratedRGB"/>
@@ -381,7 +381,7 @@
                                     <action selector="dismiss:" destination="tKa-ah-f94" eventType="touchUpInside" id="WkV-8X-cyi"/>
                                 </connections>
                             </button>
-                            <button appearanceType="aqua" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sTE-lB-GLR">
+                            <button appearanceType="aqua" opaque="NO" contentMode="scaleToFill" ambiguous="YES" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sTE-lB-GLR">
                                 <rect key="frame" x="0.0" y="498" width="320" height="50"/>
                                 <color key="backgroundColor" red="0.13548860500000001" green="0.13548860500000001" blue="0.13548860500000001" alpha="0.59999999999999998" colorSpace="calibratedRGB"/>
                                 <fontDescription key="fontDescription" name="HelveticaNeue-Light" family="Helvetica Neue" pointSize="22"/>
@@ -395,6 +395,9 @@
                             </button>
                         </subviews>
                         <color key="backgroundColor" cocoaTouchSystemColor="darkTextColor"/>
+                        <constraints>
+                            <constraint firstItem="XLx-Vy-ebu" firstAttribute="top" secondItem="sTE-lB-GLR" secondAttribute="bottom" constant="20" id="WdR-4T-nlX"/>
+                        </constraints>
                     </view>
                     <connections>
                         <outlet property="dismissButton" destination="KOo-Kp-GWK" id="EJY-D4-b5c"/>

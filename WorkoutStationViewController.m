@@ -64,7 +64,7 @@
     if(indexPath.row == [_workoutList count]){
         reuseId = @"Add";
         AddCell *cell = (AddCell *)[tableView dequeueReusableCellWithIdentifier:reuseId];
-        cell.workoutField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:@"Insert Workout Name" attributes:@{NSForegroundColorAttributeName: [UIColor whiteColor]}];
+        cell.workoutField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:@"Enter Workout Name Here" attributes:@{NSForegroundColorAttributeName: [UIColor whiteColor]}];
         cell.workoutField.delegate = self;
         return cell;
     }else{

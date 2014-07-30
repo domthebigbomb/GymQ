@@ -96,6 +96,7 @@
     [_weightField setText:@""];
     [_setsField setText:@""];
     [_repsField setText:@""];
+    /*
     [UIView animateWithDuration:0.5f animations:^{
         [_savedLabel setAlpha:1.0];
     } completion:^(BOOL finished) {
@@ -103,6 +104,7 @@
             [_savedLabel setAlpha:0];
         }];
     }];
+     */
     NSLog(@"User: %@",[_user description]);
 }
 
