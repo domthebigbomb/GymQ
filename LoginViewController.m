@@ -43,7 +43,7 @@
     [_emailField setAlpha:0];
     if(([[UIScreen mainScreen] bounds].size.height - 568) ? NO:YES){
         // iPhone 5/5s keyboard adjustments
-        _backgroundImageConstraint.constant = 0;
+        //_backgroundImageConstraint.constant = 0;
     }
 
     _tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideKeyboard)];
@@ -60,6 +60,10 @@
 
 -(void)viewWillAppear:(BOOL)animated{
     currentUser = nil;
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"username"]){
+        [_usernameField setText:[[NSUserDefaults standardUserDefaults] objectForKey:@"username"]];
+        [_passwordField setText:[[NSUserDefaults standardUserDefaults] objectForKey:@"password"]];
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -91,8 +95,10 @@
     }
     
     int movement = (up ? -movementDistance : movementDistance);
-    [UIView animateWithDuration:1.0f animations:^{
-        _backgroundImageConstraint.constant = _backgroundImageConstraint.constant + movement;
+    _backgroundImageConstraint.constant = _backgroundImageConstraint.constant + movement;
+
+    [UIView animateWithDuration:.3f animations:^{
+        [self.view layoutIfNeeded];
     }];
 }
 
@@ -137,6 +143,11 @@
             [_confirmPasswordField setAlpha:0];
         } completion:nil];
         
+        [UIView animateWithDuration:.25 delay:.75 options:UIViewAnimationOptionCurveEaseIn animations:^{
+            [_rememberMeLabel setAlpha:1.0];
+            [_rememberMeSwitch setAlpha:1.0];
+        } completion:nil];
+        
         [UIView animateWithDuration:.75 delay:.25 options:UIViewAnimationOptionCurveEaseOut animations:^{
             _loginBgToLogoConstraint.constant = 33;
             _loginBgHeightConstraint.constant = 115;
@@ -148,10 +159,6 @@
             
             [_loginButton setAlpha:1.0];
 
-            //[_usernameField setCenter:CGPointMake(_usernameField.center.x, _usernameField.center.y + 25)];
-            //[_passwordField setCenter:CGPointMake(_passwordField.center.x, _passwordField.center.y + 25)];
-            //[_confirmPasswordField setCenter:CGPointMake(_confirmPasswordField.center.x, _confirmPasswordField.center.y + 25)];
-            //[_emailField setCenter:CGPointMake(_emailField.center.x, _emailField.center.y + 25)];
             [self.view layoutIfNeeded];
 
         } completion:nil];
@@ -163,6 +170,7 @@
                 [_activityView stopAnimating];
                 [_loginButton setEnabled:YES];
                 NSLog(@"Login successful");
+                [self saveUsername:_usernameField.text Password:_passwordField.text];
                 [_usernameField setText:@""];
                 [_passwordField setText:@""];
                 [_confirmPasswordField setText:@""];
@@ -171,17 +179,25 @@
                 [self performSegueWithIdentifier:@"Login" sender:self];
             }else{
                 [_loginButton setEnabled:YES];
+                [_activityView stopAnimating];
                 NSLog(@"Error logging in: %@", [error description]);
                 if([[error description] rangeOfString:@"invalid login credentials"].location != NSNotFound){
                     _alert = [[UIAlertView alloc] initWithTitle:@"Login Error" message:@"Invalid credentials" delegate:self cancelButtonTitle:@"Ok" otherButtonTitles: nil];
                     [_alert show];
                 }
-                
-                //if([[error description] containsString:@"invalid login credentials"])
-                    // iOS 8 Feature
             }
         }];
-        
+    }
+}
+
+-(void)saveUsername:(NSString *)username Password:(NSString *)password {
+    if([_rememberMeSwitch isOn]){
+        // Remember user
+        [[NSUserDefaults standardUserDefaults] setObject:username forKey:@"username"];
+        [[NSUserDefaults standardUserDefaults] setObject:password forKey:@"password"];
+    }else{
+        [[NSUserDefaults standardUserDefaults] setObject:@"" forKey:@"username"];
+        [[NSUserDefaults standardUserDefaults] setObject:@"" forKey:@"password"];
     }
 }
 
@@ -251,6 +267,11 @@
         [self.view layoutIfNeeded];
 
     } completion:^(BOOL finished) {
+    }];
+    
+    [UIView animateWithDuration:.25 animations:^{
+        [_rememberMeLabel setAlpha:0.0];
+        [_rememberMeSwitch setAlpha:0.0];
     }];
     
     [UIView animateWithDuration:.5 delay:.15 options:UIViewAnimationOptionCurveEaseIn animations:^{

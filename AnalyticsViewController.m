@@ -16,6 +16,9 @@
 @implementation AnalyticsViewController{
     NSInteger numWeeks;
     NSMutableArray *xAxis;
+    NSString *yType;
+    NSString *yLabel;
+    NSString *yUnits;
 }
 
 - (void)viewDidLoad {
@@ -23,6 +26,18 @@
     [_graphSegementedControl addTarget:self action:@selector(switchGraphs:) forControlEvents:UIControlEventValueChanged];
     [_hostView setAllowPinchScaling:YES];
     numWeeks = 5;
+    if([_workoutData count] > 0){
+        NSString *units = [[_workoutData firstObject] objectForKey:@"units"];
+        if([units isEqualToString:@"mi"] || [units isEqualToString:@"km"]){
+            yType = @"velocity";
+            yLabel = @"Velocity";
+            yUnits = [NSString stringWithFormat:@"%@/h",units];
+        }else{
+            yType = @"weight";
+            yLabel = @"Weight";
+            yUnits = [NSString stringWithFormat:@"%@",units];
+        }
+    }
     //xAxis = @[@0.0,@1.0,@1.5,@2.0,@3.5];
 }
 
@@ -81,7 +96,11 @@
     double firstWeight;
 
     if([identifier isEqualToString:@"Recent"]){
-        firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:@"weight"] doubleValue];
+        if([_workoutData count] >= 5){
+            firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:yType] doubleValue];
+        }else{
+            firstWeight = [[[_workoutData firstObject] objectForKey:yType] doubleValue];
+        }
         xAxisTitle = @"Sessions Past";
         graphTitle = @"Last 5 Workouts";
     }else if([identifier isEqualToString:@"Week"]){
@@ -92,7 +111,7 @@
         currentInterval -= pastWeeks;
         NSInteger indexOfOldestWorkout = [_workoutData count];
         // Locate first instance of date out of bounds, end of array is more recent so back track.
-        for(int i = [_workoutData count] - 1; i >=0; i--){
+        for(int i = (int)[_workoutData count] - 1; i >=0; i--){
             NSTimeInterval diff = [currentDate timeIntervalSinceDate:[[_workoutData objectAtIndex:i] objectForKey:@"timestamp"]];
             if(diff < pastWeeks){
                 // Index of a workout within week range
@@ -105,7 +124,7 @@
         NSDate *oldestDate = [[_workoutData objectAtIndex:indexOfOldestWorkout] objectForKey:@"timestamp"];
         NSTimeInterval referenceInterval = [currentDate timeIntervalSinceDate:oldestDate];
         // Need to fill xAxis chronologically so iterate forward
-        for(int i = indexOfOldestWorkout; i < [_workoutData count]; i++){
+        for(int i = (int)indexOfOldestWorkout; i < [_workoutData count]; i++){
             NSDictionary *workout = [_workoutData objectAtIndex:i];
             NSDate *workoutDate = [workout objectForKey:@"timestamp"];
             NSTimeInterval interval = [workoutDate timeIntervalSinceDate:oldestDate];
@@ -118,7 +137,7 @@
             //If no workouts were within range, compensate by setting firstWeight to the last index of array
             indexOfOldestWorkout--;
         }
-        firstWeight = [[[_workoutData objectAtIndex:indexOfOldestWorkout]objectForKey:@"weight"] doubleValue];
+        firstWeight = [[[_workoutData objectAtIndex:indexOfOldestWorkout]objectForKey:yType] doubleValue];
         
         xAxisTitle = @"Past Weeks";
         graphTitle = [[NSString alloc] initWithFormat:@"Past %@ Weeks",[NSNumber numberWithInteger:numWeeks]];
@@ -136,7 +155,7 @@
             NSNumber *xPos = [[NSNumber alloc] initWithDouble:ratio];
             [xAxis addObject:xPos];
         }
-        firstWeight = [[[_workoutData firstObject]objectForKey:@"weight"] doubleValue];
+        firstWeight = [[[_workoutData firstObject]objectForKey:yType] doubleValue];
         xAxisTitle = @"Dates";
         graphTitle = @"All Workouts";
     }
@@ -178,16 +197,42 @@
     NSInteger i = 0;
     
     for (NSDictionary *workout in _workoutData) {
-        CPTAxisLabel *label = [[CPTAxisLabel alloc] initWithText:[NSString stringWithFormat:@"%@",[NSNumber numberWithInt:5-i]] textStyle:x.labelTextStyle];
-        CGFloat location = i;
-        
-        label.tickLocation = CPTDecimalFromCGFloat(location);
-        label.offset = x.majorTickLength;
-        if (label) {
-            [xLabels addObject:label];
-            [xLocations addObject:[NSNumber numberWithFloat:location]];
+        CPTAxisLabel *label;
+        if([identifier isEqualToString:@"Recent"]){
+            label = [[CPTAxisLabel alloc] initWithText:[NSString stringWithFormat:@"%@",[NSNumber numberWithInteger:5-i]] textStyle:x.labelTextStyle];
+            CGFloat location = i;
+            
+            label.tickLocation = CPTDecimalFromCGFloat(location);
+            label.offset = x.majorTickLength;
+            if (label) {
+                [xLabels addObject:label];
+                [xLocations addObject:[NSNumber numberWithFloat:location]];
+            }
+            i++;
+        }else if ([identifier isEqualToString:@"Week"]){
+            label = [[CPTAxisLabel alloc] initWithText:[NSString stringWithFormat:@"%@",[NSNumber numberWithInteger:5-i]] textStyle:x.labelTextStyle];
+            CGFloat location = i;
+            
+            label.tickLocation = CPTDecimalFromCGFloat(location);
+            label.offset = x.majorTickLength;
+            if (label) {
+                [xLabels addObject:label];
+                [xLocations addObject:[NSNumber numberWithFloat:location]];
+            }
+            i++;
+        }else{
+            label = [[CPTAxisLabel alloc] initWithText:[NSString stringWithFormat:@"%@",[NSNumber numberWithInteger:i]] textStyle:x.labelTextStyle];
+            CGFloat location = i;
+            
+            label.tickLocation = CPTDecimalFromCGFloat(location);
+            label.offset = x.majorTickLength;
+            if (label) {
+                [xLabels addObject:label];
+                [xLocations addObject:[NSNumber numberWithFloat:location]];
+            }
+            i++;
         }
-        i++;
+        
     }
     x.axisLabels = xLabels;
     x.majorTickLocations = xLocations;
@@ -196,7 +241,7 @@
     // 4 - Configure y-axis
     CPTXYAxis *y = axisSet.yAxis;
     //y.orthogonalCoordinateDecimal = CPTDecimalFromString(@"130");
-    NSString *yTitle = [NSString stringWithFormat:@"Weight (%@)",[[_workoutData lastObject] objectForKey:@"units"]];
+    NSString *yTitle = [NSString stringWithFormat:@"%@ (%@)",yLabel,yUnits];
     y.title = yTitle;
     y.titleOffset = -40.0f;
     y.labelingPolicy = CPTAxisLabelingPolicyNone;
@@ -301,7 +346,12 @@
     double partialLength = 0.05 * CPTDecimalDoubleValue(yRange.length);
     
     [yRange expandRangeByFactor:CPTDecimalFromCGFloat(1.6f)];
-    double firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:@"weight"] doubleValue];
+    double firstWeight;
+    if([_workoutData count] >= 5){
+        firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:yType] doubleValue];
+    }else{
+        firstWeight = [[[_workoutData firstObject] objectForKey:yType] doubleValue];
+    }
     // Calculate first weight
     yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromString([NSString stringWithFormat:@"%@",[NSNumber numberWithDouble:firstWeight - 2.5]]) length: yRange.length];
     plotSpace.yRange = yRange;
@@ -369,7 +419,12 @@
     // 3 - Configure x-axis
     CPTXYAxis *x = axisSet.xAxis;
 
-    double firstWeight = [[[_workoutData objectAtIndex:[_workoutData count]-5]objectForKey:@"weight"] doubleValue];
+    double firstWeight;
+    if([_workoutData count] >= 5){
+        firstWeight = [[[_workoutData objectAtIndex:[_workoutData count] - 5]objectForKey:yType] doubleValue];
+    }else{
+        firstWeight = [[[_workoutData firstObject] objectForKey:yType] doubleValue];
+    }
     x.orthogonalCoordinateDecimal = CPTDecimalFromString([NSString stringWithFormat:@"%@",[NSNumber numberWithDouble: firstWeight - 2.5]]);
     x.title = @"Sessions Past";
     x.titleTextStyle = axisTitleStyle;
@@ -404,7 +459,7 @@
     // 4 - Configure y-axis
     CPTXYAxis *y = axisSet.yAxis;
     //y.orthogonalCoordinateDecimal = CPTDecimalFromString(@"130");
-    NSString *yTitle = [NSString stringWithFormat:@"Weight (%@)",[[_workoutData lastObject] objectForKey:@"units"]];
+    NSString *yTitle = [NSString stringWithFormat:@"%@ (%@)",yLabel,yUnits];
     y.title = yTitle;
     y.titleTextStyle = axisTitleStyle;
     y.titleOffset = -40.0f;
@@ -448,11 +503,15 @@
 -(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot{
     NSString *plotId = (NSString *)plot.identifier;
     if([plotId isEqualToString:@"Recent"]){
-        return 5;
+        if([_workoutData count] >= 5){
+            return 5;
+        }else{
+            return [_workoutData count];
+        }
     }else if([plotId isEqualToString:@"Week"]){
         NSTimeInterval pastWeeks = 60 * 60 * 24 * 7 * numWeeks;
         NSInteger indexOfOldestWorkout = [_workoutData count];
-        for(int i = [_workoutData count] - 1; i >= 0; i--){
+        for(int i = (int)[_workoutData count] - 1; i >= 0; i--){
             NSTimeInterval diff = [[NSDate date] timeIntervalSinceDate:[[_workoutData objectAtIndex:i] objectForKey:@"timestamp"]];
             if(diff < pastWeeks){
                 // Located index of workout within range
@@ -485,11 +544,17 @@
             break;
         case CPTScatterPlotFieldY:
             if([plot.identifier isEqual:@"Recent"]){
-                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:valueCount - 5 + idx] objectForKey:@"weight"] doubleValue]];
+                if([_workoutData count] >= 5){
+                    return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:valueCount - 5 + idx] objectForKey:yType] doubleValue]];
+                }else{
+                    NSLog(@"Y value: %@", [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:valueCount - [_workoutData count] + idx] objectForKey:yType] doubleValue]]);
+                    return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:idx] objectForKey:yType] doubleValue]];
+                }
+                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:valueCount - 5 + idx] objectForKey:yType] doubleValue]];
             }else if([plot.identifier isEqual:@"Week"]){
-                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:idx] objectForKey:@"weight"] doubleValue]];
+                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:idx] objectForKey:yType] doubleValue]];
             }else{
-                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:idx] objectForKey:@"weight"] doubleValue]];
+                return [NSNumber numberWithDouble:[[[_workoutData objectAtIndex:idx] objectForKey:yType] doubleValue]];
             }
             break;
     }

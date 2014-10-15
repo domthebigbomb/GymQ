@@ -8,10 +8,11 @@
 
 #import "GymQViewController.h"
 #import "WorkoutStationViewController.h"
-
+#import "MyStationsViewController.h"
 @interface GymQViewController ()
 @property (strong, nonatomic) UIAlertView *alert;
 @property (strong, nonatomic) UITapGestureRecognizer *tap;
+@property (strong, nonatomic) NSMutableDictionary *presets;
 @end
 
 @implementation GymQViewController{
@@ -28,6 +29,28 @@
     _tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideKeyboard)];
     _tap.enabled = YES;
     [self.view addGestureRecognizer:_tap];
+    if(!_user[@"workouts"]){
+        NSLog(@"No workouts found");
+        NSArray *existingWorkouts = _user[@"stations"];
+    }else{
+        NSLog(@"Workouts exists");
+    }
+}
+
+-(void)viewDidAppear:(BOOL)animated{
+    if(!_presets){
+        PFQuery *query = [PFQuery queryWithClassName:@"PresetStations"];
+        [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+            _presets = [[NSMutableDictionary alloc] init];
+            for(PFObject *object in objects){
+                NSMutableDictionary *preset = [[NSMutableDictionary alloc] init];
+                [preset setObject:object[@"stationName"] forKey:@"stationName"];
+                [preset setObject:object[@"workouts"] forKey:@"workouts"];
+                [_presets setObject:preset forKey:object[@"code"]];
+            }
+            //NSLog(@"Presets: %@",[_presets description]);
+        }];
+    }
 }
 
 - (void)didReceiveMemoryWarning
@@ -65,8 +88,12 @@
     if([[segue identifier] isEqualToString:@"Scan"]){
         QRScanViewController *vc = (QRScanViewController *)[segue destinationViewController];
         vc.delegate = self;
+    }else if([[segue identifier] isEqualToString:@"ShowStations"]){
+        MyStationsViewController *vc = (MyStationsViewController *)[segue destinationViewController];
+        vc.user = _user;
     }else{
         WorkoutStationViewController *vc = (WorkoutStationViewController *)[segue destinationViewController];
+        vc.presets = _presets;
         vc.stationCode = stationCode;
         vc.station = currStation;
         vc.user = _user;

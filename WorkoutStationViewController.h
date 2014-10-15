@@ -12,6 +12,7 @@
 @interface WorkoutStationViewController : UITableViewController<UITextFieldDelegate>
 
 @property (strong, nonatomic) PFUser *user;
+@property (strong, nonatomic) NSDictionary *presets;
 @property (strong, nonatomic) NSDictionary *station;
 @property (strong, nonatomic) NSString *stationCode;
 
